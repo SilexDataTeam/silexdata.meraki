@@ -1,5 +1,7 @@
-# SPDX-FileCopyrightText: Silex Data Solutions
-# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026, Silex Data Solutions <info@silexdata.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-FileCopyrightText: 2026 Silex Data Solutions <info@silexdata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Unit tests for the silexdata.meraki.cisco_meraki inventory plugin.
 
 The plugin is driven only through parse(), the way ansible-inventory drives it,
