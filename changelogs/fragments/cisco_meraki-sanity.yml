@@ -1,0 +1,6 @@
+---
+bugfixes:
+  - cisco_meraki - report that the ``meraki`` Python library is required when it is not installed, instead of failing to load the plugin.
+trivial:
+  - cisco_meraki - drop the shebang, the unused imports and the ``from __future__ import annotations`` that ansible-core 2.14's sanity tests
+    reject, and apply the shared ruff rules.

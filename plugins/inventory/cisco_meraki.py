@@ -3,7 +3,9 @@
 # SPDX-FileCopyrightText: 2024 Silex Data Solutions <info@silexdata.com>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from __future__ import annotations
+from __future__ import absolute_import, division, print_function
+
+__metaclass__ = type
 
 DOCUMENTATION = '''
 ---
@@ -56,12 +58,17 @@ options:
     default: true
 '''
 
-import meraki
+from ansible.errors import AnsibleError
+from ansible.module_utils.basic import missing_required_lib
+from ansible.plugins.inventory import BaseInventoryPlugin, Cacheable, Constructable, to_safe_group_name
 
-from ansible.errors import AnsibleError, AnsibleParserError
-from ansible.module_utils._text import to_bytes, to_native, to_text
-from ansible.module_utils.common._collections_compat import MutableMapping
-from ansible.plugins.inventory import BaseInventoryPlugin, Cacheable, to_safe_group_name, Constructable
+try:
+    import meraki
+except ImportError:
+    HAS_MERAKI = False
+else:
+    HAS_MERAKI = True
+
 
 class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
     '''Host inventory parser for ansible using Cisco Meraki API as source'''
@@ -69,7 +76,7 @@ class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
     NAME = 'silexdata.meraki.cisco_meraki'
 
     def __init__(self):
-        super(InventoryModule, self).__init__()
+        super().__init__()
 
         self.dashboard = None
         self.group_parent = None
@@ -77,7 +84,7 @@ class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
 
     def verify_file(self, path):
         valid = False
-        if super(InventoryModule, self).verify_file(path):
+        if super().verify_file(path):
             if path.endswith(('meraki.yaml', 'meraki.yml')):
                 valid = True
             else:
@@ -118,7 +125,7 @@ class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
 
             # Create a group for the organization if desired
             if self.want_organization:
-                org_group_name = to_safe_group_name("{0}organization_{1}".format(self.group_prefix, org['name'].lower().replace(' ', '')))
+                org_group_name = to_safe_group_name(f"{self.group_prefix}organization_{org['name'].lower().replace(' ', '')}")
                 self.inventory.add_group(org_group_name)
                 if self.group_parent:
                     self.inventory.add_child(self.group_parent, org_group_name)
@@ -135,12 +142,12 @@ class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
                     'url': network['url'],
                     'is_bound_to_config_template': network['isBoundToConfigTemplate'],
                     'org_id': org['id'],
-                    'org_name': org['name']
+                    'org_name': org['name'],
                 }
 
                 if self.want_devices:
-                  devices = self.dashboard.networks.getNetworkDevices(network['id'])
-                  host_vars.update({'devices': devices})
+                    devices = self.dashboard.networks.getNetworkDevices(network['id'])
+                    host_vars.update({'devices': devices})
 
                 self.add_host(network['name'], host_vars)
 
@@ -148,10 +155,13 @@ class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
                     self.inventory.add_child(org_group_name, network['name'])
 
     def parse(self, inventory, loader, path, cache=True):
-        super(InventoryModule, self).parse(inventory, loader, path)
+        super().parse(inventory, loader, path)
 
         # Read config from file
         self._read_config_data(path)
+
+        if not HAS_MERAKI:
+            raise AnsibleError(missing_required_lib('meraki'))
 
         self.dashboard = meraki.DashboardAPI(suppress_logging=True)
 
