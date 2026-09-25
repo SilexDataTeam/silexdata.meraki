@@ -1,0 +1,110 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Check-mode tests for the cisco_meraki inventory plugin.
+#
+# An inventory plugin only reads, so a playbook run with --check must see the
+# same inventory, and report no changes, exactly as a normal run would. These
+# are NOT conditional on any declared check-mode support: if the plugin ever
+# behaves differently under --check, they fail by design.
+
+- name: Check-mode | Write a playbook that visits every inventory host
+  ansible.builtin.copy:
+    dest: "{{ cisco_meraki_workdir.path }}/visit-hosts.yml"
+    content: |
+      ---
+      - name: Visit every host the inventory produced
+        hosts: all
+        gather_facts: false
+        tasks:
+          - name: Report the host
+            ansible.builtin.debug:
+              var: inventory_hostname
+    mode: "0600"
+
+- name: Check-mode | Write a source that omits the required meraki_api_key
+  ansible.builtin.copy:
+    dest: "{{ cisco_meraki_workdir.path }}/check-no-key.meraki.yml"
+    content: |
+      ---
+      plugin: silexdata.meraki.cisco_meraki
+      meraki_base_url: {{ cisco_meraki_unreachable_base_url }}
+    mode: "0600"
+
+- name: Check-mode | Run the playbook in check mode against the invalid source
+  ansible.builtin.command:
+    argv:
+      - env
+      - -u
+      - MERAKI_DASHBOARD_API_KEY
+      - ansible-playbook
+      - --check
+      - -i
+      - "{{ cisco_meraki_workdir.path }}/check-no-key.meraki.yml"
+      - "{{ cisco_meraki_workdir.path }}/visit-hosts.yml"
+  environment: "{{ cisco_meraki_inventory_env }}"
+  register: cisco_meraki_check_no_key
+  changed_when: false
+  failed_when: false
+
+- name: Check-mode | Assert check mode does not bypass the plugin's validation
+  ansible.builtin.assert:
+    that:
+      - cisco_meraki_check_no_key.rc != 0
+      - "'meraki_api_key' in (cisco_meraki_check_no_key.stdout ~ cisco_meraki_check_no_key.stderr)"
+    fail_msg: >-
+      Under --check, a source without meraki_api_key must still be refused.
+      rc={{ cisco_meraki_check_no_key.rc }}
+    success_msg: Check mode kept the plugin's validation.
+
+- name: Check-mode | Live inventory under --check
+  when: cisco_meraki_service_available | bool
+  block:
+    - name: Check-mode | Write a source that takes its key from the environment
+      ansible.builtin.copy:
+        dest: "{{ cisco_meraki_workdir.path }}/check-live.meraki.yml"
+        content: |
+          ---
+          plugin: silexdata.meraki.cisco_meraki
+          meraki_base_url: {{ cisco_meraki_base_url }}
+        mode: "0600"
+
+    - name: Check-mode | List the inventory normally
+      ansible.builtin.command:
+        argv:
+          - ansible-inventory
+          - -i
+          - "{{ cisco_meraki_workdir.path }}/check-live.meraki.yml"
+          - --list
+      environment: "{{ cisco_meraki_inventory_env | combine({'MERAKI_DASHBOARD_API_KEY': cisco_meraki_api_key}) }}"
+      register: cisco_meraki_check_list
+      changed_when: false
+      no_log: true
+
+    - name: Check-mode | Run the playbook in check mode against the same source
+      ansible.builtin.command:
+        argv:
+          - ansible-playbook
+          - --check
+          - -i
+          - "{{ cisco_meraki_workdir.path }}/check-live.meraki.yml"
+          - "{{ cisco_meraki_workdir.path }}/visit-hosts.yml"
+      environment: "{{ cisco_meraki_inventory_env | combine({'MERAKI_DASHBOARD_API_KEY': cisco_meraki_api_key}) }}"
+      register: cisco_meraki_check_run
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Check-mode | Assert check mode saw every host and changed nothing
+      vars:
+        cisco_meraki_check_hosts: "{{ (cisco_meraki_check_list.stdout | from_json)._meta.hostvars.keys() | list }}"
+      ansible.builtin.assert:
+        that:
+          - cisco_meraki_check_run.rc == 0
+          - cisco_meraki_check_hosts | length > 0
+          - cisco_meraki_check_hosts | reject('in', cisco_meraki_check_run.stdout) | list | length == 0
+          - cisco_meraki_check_run.stdout is not search('changed=[1-9]')
+        fail_msg: >-
+          ansible-playbook --check must see the same {{ cisco_meraki_check_hosts | length }} hosts
+          as ansible-inventory and change nothing. rc={{ cisco_meraki_check_run.rc }}
+        success_msg: Check mode saw the same inventory and made no changes.

@@ -128,7 +128,6 @@ min_version = "2.14"
 # which should point at a dry-run/.invalid host and cause live tests to be
 # skipped.
 [sessions.ansible_test_integration_w_default_container.ansible_vars_from_env_vars]
-# TODO: replace with the real setup_meraki_* variables your
-# setup_meraki integration role's defaults/main.yml declares.
-setup_meraki_endpoint = "MERAKI_ENDPOINT"
+setup_meraki_base_url = "MERAKI_BASE_URL"
+setup_meraki_api_key = "MERAKI_DASHBOARD_API_KEY"
 setup_meraki_require_service = "MERAKI_REQUIRE_SERVICE"

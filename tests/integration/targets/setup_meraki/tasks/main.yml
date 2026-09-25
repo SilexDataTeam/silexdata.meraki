@@ -1,0 +1,59 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Setup role for the silexdata.meraki integration tests.
+#
+# Responsibilities:
+#   1. Initialize the shared setup_meraki_* variables.
+#   2. Probe the target service for availability and record
+#      setup_meraki_service_available so service-dependent
+#      ("live") tests can be skipped when the service is down.
+#
+# When the service is unreachable the default behavior is to warn and let
+# live tests skip. Set setup_meraki_require_service=true to
+# fail the run instead.
+
+# The plugin takes flat meraki_base_url / meraki_api_key options, so there is no
+# grouped auth variable to build: targets inherit setup_meraki_base_url and
+# setup_meraki_api_key through their own defaults.
+
+# An authenticated read-only call, so "available" means the endpoint answers
+# *and* accepts the key: a live test run with a rejected key would otherwise
+# fail for a reason that has nothing to do with the plugin.
+- name: Probe the meraki service endpoint for availability
+  ansible.builtin.uri:
+    url: "{{ setup_meraki_base_url }}/organizations"
+    headers:
+      Authorization: "Bearer {{ setup_meraki_api_key }}"
+    timeout: "{{ setup_meraki_service_probe_timeout }}"
+    status_code: 200
+  register: setup_meraki_probe
+  ignore_errors: true
+  # The request headers carry the API key.
+  no_log: true
+
+- name: Record whether the meraki service is available
+  ansible.builtin.set_fact:
+    setup_meraki_service_available: "{{ setup_meraki_probe is succeeded }}"
+
+- name: Fail because the meraki service is unavailable and is required
+  ansible.builtin.fail:
+    msg: >-
+      The meraki service is not reachable and
+      setup_meraki_require_service is enabled.
+  when:
+    - not (setup_meraki_service_available | bool)
+    - setup_meraki_require_service | bool
+
+- name: Warn that live tests will be skipped because the service is unavailable
+  ansible.builtin.debug:
+    # Prints a stable marker token (SETUP_SERVICE_UNAVAILABLE) so CI can detect
+    # this condition in the run output and raise a native warning annotation.
+    # Locally this just surfaces as a readable warning message.
+    msg: >-
+      SETUP_SERVICE_UNAVAILABLE: the meraki service is not
+      reachable; skipping live integration tests. Set
+      setup_meraki_require_service=true to fail instead.
+  when:
+    - not (setup_meraki_service_available | bool)
+    - not (setup_meraki_require_service | bool)

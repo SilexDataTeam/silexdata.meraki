@@ -34,7 +34,5 @@ jobs:
     # for the reusable workflow's detect job to read.
     if: github.repository != 'SilexDataTeam/silexdata.collection_skeleton'
     uses: SilexDataTeam/silexdata.collection_skeleton/.github/workflows/reusable-coverage.yml@v1
-    # TODO: set integration-target to this collection's primary target (e.g.
-    # manage_<name>) to keep CI fast; leave unset to run the whole suite.
-    # with:
-    #   integration-target: manage_example
+    with:
+      integration-target: cisco_meraki

@@ -5,12 +5,10 @@
 # the live (service-dependent) integration tests.
 # integration_config.yml is git-ignored and must never be committed.
 
-# TODO: after renaming tests/integration/targets/setup_EXAMPLE/ to
-# setup_meraki/, override the placeholder credentials declared
-# in that role's defaults/main.yml here, e.g.:
-# setup_meraki_endpoint: "https://api.example.com"
-# setup_meraki_username: "..."
-# setup_meraki_password: "..."
+# Override the placeholder credentials declared in
+# tests/integration/targets/setup_meraki/defaults/main.yml:
+# setup_meraki_base_url: "https://api.meraki.com/api/v1"
+# setup_meraki_api_key: "..."
 
 # Fail the run (instead of warning and skipping live tests) when the service
 # is unreachable. Recommended for pipelines that require live coverage.

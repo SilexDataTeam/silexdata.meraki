@@ -1,0 +1,118 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Expected-failure tests for the cisco_meraki inventory plugin.
+#
+# Each source here is one the plugin must refuse. None of them can reach a
+# service - the only URL they name is under the reserved .invalid TLD - so they
+# run with or without credentials. MERAKI_DASHBOARD_API_KEY is removed from the
+# environment of every run, so only what the source file says can take effect.
+
+- name: Expected-failures | Write a source that omits the required meraki_api_key
+  ansible.builtin.copy:
+    dest: "{{ cisco_meraki_workdir.path }}/no-key.meraki.yml"
+    content: |
+      ---
+      plugin: silexdata.meraki.cisco_meraki
+      meraki_base_url: {{ cisco_meraki_unreachable_base_url }}
+    mode: "0600"
+
+- name: Expected-failures | Load the source without an API key
+  ansible.builtin.command:
+    argv:
+      - env
+      - -u
+      - MERAKI_DASHBOARD_API_KEY
+      - ansible-inventory
+      - -i
+      - "{{ cisco_meraki_workdir.path }}/no-key.meraki.yml"
+      - --list
+  environment: "{{ cisco_meraki_inventory_env }}"
+  register: cisco_meraki_no_key
+  changed_when: false
+  failed_when: false
+
+- name: Expected-failures | Assert the missing API key was refused, by name
+  ansible.builtin.assert:
+    that:
+      - cisco_meraki_no_key.rc != 0
+      - "'meraki_api_key' in cisco_meraki_no_key.stderr"
+    fail_msg: >-
+      A source without meraki_api_key (and no MERAKI_DASHBOARD_API_KEY) must be
+      refused with an error naming the option. rc={{ cisco_meraki_no_key.rc }}
+      stderr={{ cisco_meraki_no_key.stderr }}
+    success_msg: The missing API key was refused.
+
+- name: Expected-failures | Write a source naming another plugin
+  ansible.builtin.copy:
+    dest: "{{ cisco_meraki_workdir.path }}/wrong-plugin.meraki.yml"
+    content: |
+      ---
+      plugin: silexdata.meraki.not_cisco_meraki
+      meraki_api_key: dry-run-api-key
+      meraki_base_url: {{ cisco_meraki_unreachable_base_url }}
+    mode: "0600"
+
+- name: Expected-failures | Load the source naming another plugin
+  ansible.builtin.command:
+    argv:
+      - env
+      - -u
+      - MERAKI_DASHBOARD_API_KEY
+      - ansible-inventory
+      - -i
+      - "{{ cisco_meraki_workdir.path }}/wrong-plugin.meraki.yml"
+      - --list
+  environment: "{{ cisco_meraki_inventory_env }}"
+  register: cisco_meraki_wrong_plugin
+  changed_when: false
+  failed_when: false
+
+- name: Expected-failures | Assert a plugin value outside its choices was refused
+  ansible.builtin.assert:
+    that:
+      - cisco_meraki_wrong_plugin.rc != 0
+      - "'silexdata.meraki.not_cisco_meraki' in cisco_meraki_wrong_plugin.stderr"
+    fail_msg: >-
+      plugin accepts only silexdata.meraki.cisco_meraki.
+      rc={{ cisco_meraki_wrong_plugin.rc }} stderr={{ cisco_meraki_wrong_plugin.stderr }}
+    success_msg: The wrong plugin name was refused.
+
+- name: Expected-failures | Write a source whose meraki_base_url cannot be reached
+  ansible.builtin.copy:
+    dest: "{{ cisco_meraki_workdir.path }}/unreachable.meraki.yml"
+    content: |
+      ---
+      plugin: silexdata.meraki.cisco_meraki
+      meraki_api_key: dry-run-api-key
+      meraki_base_url: {{ cisco_meraki_unreachable_base_url }}
+    mode: "0600"
+
+- name: Expected-failures | Load the source whose API cannot be reached
+  ansible.builtin.command:
+    argv:
+      - env
+      - -u
+      - MERAKI_DASHBOARD_API_KEY
+      - ansible-inventory
+      - -i
+      - "{{ cisco_meraki_workdir.path }}/unreachable.meraki.yml"
+      - --list
+  environment: "{{ cisco_meraki_inventory_env }}"
+  register: cisco_meraki_unreachable
+  changed_when: false
+  failed_when: false
+
+# The source supplies both options the plugin needs, so the only thing that
+# can fail is reaching the configured URL - and the error must say so, rather
+# than fail for some other reason or quietly query a different URL.
+- name: Expected-failures | Assert the configured, unreachable URL is what failed
+  ansible.builtin.assert:
+    that:
+      - cisco_meraki_unreachable.rc != 0
+      - "'unreachable.meraki.invalid' in cisco_meraki_unreachable.stderr"
+    fail_msg: >-
+      With meraki_api_key and meraki_base_url set in the source, loading it must
+      fail on reaching {{ cisco_meraki_unreachable_base_url }}.
+      rc={{ cisco_meraki_unreachable.rc }} stderr={{ cisco_meraki_unreachable.stderr }}
+    success_msg: The plugin failed on the configured URL.

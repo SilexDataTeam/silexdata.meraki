@@ -1,0 +1,22 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Inherited from the setup_meraki role; tasks reference only these
+# cisco_meraki_* names, never setup_meraki_* directly.
+cisco_meraki_base_url: "{{ setup_meraki_base_url }}"
+cisco_meraki_api_key: "{{ setup_meraki_api_key }}"
+
+# Whether the service was reachable (set by the setup_meraki role). Live,
+# service-dependent tests are gated on this.
+cisco_meraki_service_available: "{{ setup_meraki_service_available }}"
+
+# A Dashboard API URL that can never resolve (RFC 6761), for the tests that
+# must fail without reaching any service.
+cisco_meraki_unreachable_base_url: "https://unreachable.meraki.invalid/api/v1"
+
+# Environment for every ansible-inventory / ansible-playbook run: only this
+# plugin may claim a source, and a source it cannot parse is an error rather
+# than a warning followed by an empty inventory.
+cisco_meraki_inventory_env:
+  ANSIBLE_INVENTORY_ENABLED: silexdata.meraki.cisco_meraki
+  ANSIBLE_INVENTORY_UNPARSED_FAILED: "true"
