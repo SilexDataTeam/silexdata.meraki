@@ -1,0 +1,134 @@
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# antsibull-nox configuration for the silexdata.meraki collection.
+# Loaded by noxfile.py via antsibull_nox.load_antsibull_nox_toml().
+# Run `nox --list` to see all available sessions.
+# Run `nox` to execute all default sessions.
+# Run `nox -R` to reuse existing virtual environments (faster iterative runs).
+
+[collection]
+# Match the minimum Python version supported by ansible-core 2.14 controller.
+min_python_version = "3.10"
+
+# ---------------------------------------------------------------------------
+# Lint
+# ---------------------------------------------------------------------------
+[sessions.lint]
+# Use ruff as the unified formatter and linter instead of the legacy defaults.
+run_isort = false           # ruff handles import sorting
+run_black = false           # ruff handles formatting
+run_ruff_format = true      # ruff format (formatter session)
+ruff_format_package = "ruff"
+run_ruff_autofix = true     # ruff check --fix (formatter session)
+ruff_autofix_package = "ruff"
+run_ruff_check = true       # ruff check read-only (codeqa session)
+run_flake8 = false          # ruff supersedes flake8
+run_pylint = false          # ruff covers most pylint rules; module code is simple
+run_mypy = false            # module files lack type annotations
+run_yamllint = true
+# Set explicitly so the YAML embedded in plugin DOCUMENTATION/EXAMPLES/RETURN
+# strings is linted against .yamllint too; unset, antsibull-nox lints those
+# blocks against yamllint's bare defaults (80-column lines).
+yamllint_config = ".yamllint"
+
+# ---------------------------------------------------------------------------
+# Ansible-lint
+# ---------------------------------------------------------------------------
+[sessions.ansible_lint]
+# Match the moderate profile set in .ansible-lint.
+strict = false
+
+# ---------------------------------------------------------------------------
+# Documentation check (antsibull-docs)
+# ---------------------------------------------------------------------------
+[sessions.docs_check]
+
+# ---------------------------------------------------------------------------
+# Collection build + Galaxy importer
+# ---------------------------------------------------------------------------
+[sessions.build_import_check]
+
+# ---------------------------------------------------------------------------
+# License check
+# ---------------------------------------------------------------------------
+[sessions.license_check]
+# Enforced from day one: the skeleton ships every file with an SPDX header (or
+# a .license sidecar), so a new collection passes both halves of this session.
+#   - run_reuse: `reuse lint` - REUSE 3.3 compliance.
+#   - run_license_check: antsibull-nox's own check. It reads per-file headers
+#     only (it ignores REUSE.toml), accepts only the licenses present in
+#     LICENSES/, forces non-module plugin types to GPL-3.0-or-later, requires
+#     the prose license name to match the SPDX tag, and rejects `Copyright:`.
+# Run on every PR by the Nox workflow's "Run extra sanity tests" job, which
+# runs every default session. See .claude/rules/licensing.md.
+default = true
+run_reuse = true
+run_license_check = true
+# Files the antsibull-nox check skips entirely. Reserve this for files that
+# cannot pass a whole-file license scan for a legitimate reason, and say why
+# next to each entry - it is the reviewed exceptions list, the licensing
+# equivalent of tests/sanity/ignore-*.txt. `reuse lint` still checks them.
+license_check_extra_ignore_paths = [
+  # Documents the header rules by quoting example headers, which the check's
+  # line-by-line scan would read as real, conflicting declarations.
+  ".claude/rules/licensing.md",
+]
+
+# ---------------------------------------------------------------------------
+# Extra checks
+# ---------------------------------------------------------------------------
+[sessions.extra_checks]
+run_no_trailing_whitespace = true
+
+# ---------------------------------------------------------------------------
+# ansible-test sanity
+# ---------------------------------------------------------------------------
+[sessions.ansible_test_sanity]
+# Not a *default* session, deliberately (antsibull-nox's own default). CI runs
+# the ansible-test sessions through antsibull-nox's matrix workflow, which runs
+# them regardless; marking them default would also make the Nox workflow's
+# "Run extra sanity tests" job - which runs every default session - repeat the
+# whole matrix sequentially. Run them locally with `nox -e ansible-test-sanity`.
+default = false
+# Minimum ansible-core version matches galaxy.yml/meta/runtime.yml requires_ansible (>=2.14.0).
+min_version = "2.14"
+
+# ---------------------------------------------------------------------------
+# ansible-test units
+# ---------------------------------------------------------------------------
+[sessions.ansible_test_units]
+# Not default, for the same reason as ansible_test_sanity above.
+# Run locally with `nox -e ansible-test-units`.
+default = false
+min_version = "2.14"
+
+# ---------------------------------------------------------------------------
+# Execution environment check
+# ---------------------------------------------------------------------------
+# Not configured: a new collection defines no execution environment. To add
+# one, add a [sessions.ee_check] section with an execution_environments list
+# (the older name, execution_environment_check, is rejected by
+# `nox -e antsibull-nox-config`).
+
+# ---------------------------------------------------------------------------
+# ansible-test integration (default container, opt-in)
+# ---------------------------------------------------------------------------
+# Not in the default run because live tests typically require real credentials
+# for whatever service this collection targets.
+# Run explicitly: nox -e ansible-test-integration-default-<ansible_core>
+# Dry-run (no credentials) still passes; setup_meraki gates live
+# tests on service availability via the setup_meraki_service_available
+# fact.
+[sessions.ansible_test_integration_w_default_container]
+default = false
+min_version = "2.14"
+
+# Map Ansible variables to environment variables so CI can inject credentials
+# without committing them. Unset env vars leave the role defaults in place,
+# which should point at a dry-run/.invalid host and cause live tests to be
+# skipped.
+[sessions.ansible_test_integration_w_default_container.ansible_vars_from_env_vars]
+# TODO: replace with the real setup_meraki_* variables your
+# setup_meraki integration role's defaults/main.yml declares.
+setup_meraki_endpoint = "MERAKI_ENDPOINT"
+setup_meraki_require_service = "MERAKI_REQUIRE_SERVICE"

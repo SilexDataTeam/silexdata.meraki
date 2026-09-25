@@ -1,0 +1,18 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# ansible-lint configuration for this collection.
+# See https://ansible.readthedocs.io/projects/lint/configuring/
+#
+# Start at the "moderate" profile to keep the pipeline green on the existing
+# code base; raise toward "safety" or "production" as the collection matures.
+profile: moderate
+
+exclude_paths:
+  - changelogs/
+  - tests/output/
+  - .github/
+
+# Linting offline avoids ansible-lint attempting to install collections from
+# Galaxy during pre-commit / CI runs.
+offline: true

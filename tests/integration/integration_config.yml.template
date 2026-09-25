@@ -1,0 +1,17 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Copy this file to integration_config.yml and fill in real credentials to run
+# the live (service-dependent) integration tests.
+# integration_config.yml is git-ignored and must never be committed.
+
+# TODO: after renaming tests/integration/targets/setup_EXAMPLE/ to
+# setup_meraki/, override the placeholder credentials declared
+# in that role's defaults/main.yml here, e.g.:
+# setup_meraki_endpoint: "https://api.example.com"
+# setup_meraki_username: "..."
+# setup_meraki_password: "..."
+
+# Fail the run (instead of warning and skipping live tests) when the service
+# is unreachable. Recommended for pipelines that require live coverage.
+# setup_meraki_require_service: true

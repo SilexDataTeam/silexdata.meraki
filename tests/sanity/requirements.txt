@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Python dependencies the sanity tests need in order to import the collection's
+# plugins (validate-modules and the import test both import them).
+#
+# TODO: add the third-party libraries this collection's plugins import, e.g.
+#   requests

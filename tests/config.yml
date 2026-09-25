@@ -1,3 +1,5 @@
+---
 # SPDX-FileCopyrightText: Silex Data Solutions
 # SPDX-License-Identifier: Apache-2.0
-/.plugin-cache.yaml
+modules:
+  python_requires: ">=3.6"

@@ -1,0 +1,7 @@
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Dependencies for unit tests. Installed by `ansible-test units --requirements`.
+# TODO: add this collection's runtime dependencies (e.g. an SDK/HTTP client
+# library used by your modules) alongside the test framework packages below.
+pytest
+pytest-mock

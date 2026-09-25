@@ -1,0 +1,5 @@
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Python dependencies required to import this collection's plugins during
+# integration tests. Installed by `ansible-test integration --requirements`.
+# TODO: add this collection's runtime dependencies here.

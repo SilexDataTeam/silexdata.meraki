@@ -1,0 +1,40 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+name: Coverage
+
+# Thin caller - see reusable-coverage.yml in the collection_skeleton repo.
+#
+# The workflow *file name* matters: docs.yml waits on this workflow's
+# coverage-html artifact by filename, so renaming this file means passing the
+# new name as reusable-docs.yml's coverage-workflow input.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    # No-op in every generated collection repo; skips only in the
+    # collection_skeleton template itself, which has no root galaxy.yml
+    # for the reusable workflow's detect job to read.
+    if: github.repository != 'SilexDataTeam/silexdata.collection_skeleton'
+    uses: SilexDataTeam/silexdata.collection_skeleton/.github/workflows/reusable-coverage.yml@v1
+    # TODO: set integration-target to this collection's primary target (e.g.
+    # manage_<name>) to keep CI fast; leave unset to run the whole suite.
+    # with:
+    #   integration-target: manage_example

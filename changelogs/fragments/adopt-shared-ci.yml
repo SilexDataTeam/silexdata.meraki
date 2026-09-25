@@ -1,0 +1,4 @@
+---
+trivial:
+  - Adopt the shared collection CI from silexdata.collection_skeleton - lint, nox, coverage, docs, changelog, release and skeleton-sync
+    workflows, with the tooling configuration they run - and standardize the collection's metadata files on the skeleton's.

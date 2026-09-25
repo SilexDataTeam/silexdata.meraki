@@ -1,0 +1,34 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# yamllint configuration for this collection.
+# See https://yamllint.readthedocs.io/
+
+extends: default
+
+rules:
+  line-length:
+    max: 160
+    level: warning
+  # GitHub Actions uses `on:` as a key, which yamllint otherwise flags as a
+  # truthy value. Disable key checking and restrict allowed truthy values.
+  truthy:
+    allowed-values: ['true', 'false']
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: disable
+  # Ansible/Galaxy files commonly omit explicit document-end markers.
+  document-start:
+    present: true
+  # Match ansible-lint's expectations so the two tools agree (avoids a config
+  # incompatibility warning and keeps ansible-lint fix mode available).
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+
+ignore: |
+  changelogs/changelog.yaml
+  tests/output/
