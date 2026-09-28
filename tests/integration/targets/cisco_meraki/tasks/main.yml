@@ -1,0 +1,29 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# This file performs no tests itself. It creates a working directory for the
+# inventory sources the tests write, then discovers and runs every test file
+# under tasks/tests/, each of which groups a category of tests (e.g.
+# expected-failures, check-mode). Add a new category by dropping another
+# <category>.yml file into tasks/tests/.
+
+- name: Run all test categories for this target
+  block:
+    - name: Create a working directory for the inventory sources
+      ansible.builtin.tempfile:
+        state: directory
+        suffix: .cisco_meraki
+      register: cisco_meraki_workdir
+
+    - name: Run all test categories for this target
+      ansible.builtin.include_tasks: "{{ cisco_meraki_test_file }}"
+      loop: "{{ query('ansible.builtin.fileglob', role_path ~ '/tasks/tests/*.yml') | sort }}"
+      loop_control:
+        loop_var: cisco_meraki_test_file
+        label: "{{ cisco_meraki_test_file | basename }}"
+  always:
+    - name: Remove the working directory
+      ansible.builtin.file:
+        path: "{{ cisco_meraki_workdir.path }}"
+        state: absent
+      when: cisco_meraki_workdir.path is defined

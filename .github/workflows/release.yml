@@ -1,0 +1,41 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+name: Release
+
+# Thin caller - see reusable-release.yml in the collection_skeleton repo.
+#
+# Required repository secrets:
+#   RELEASE_TOKEN  - PAT allowed to push to the protected main branch.
+#   GALAXY_API_KEY - Ansible Galaxy API key for this collection's namespace.
+on:
+  pull_request:
+    types:
+      - closed
+  # Finishes a release whose commit and tag were pushed but whose publishing
+  # failed: Actions > Release > Run workflow, giving that tag. Steps that
+  # already succeeded are skipped.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to finish publishing, e.g. 1.0.0.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # No-op in every generated collection repo; skips only in the
+    # collection_skeleton template itself, which has no root galaxy.yml
+    # for the reusable workflow's detect job to read.
+    if: github.repository != 'SilexDataTeam/silexdata.collection_skeleton'
+    uses: SilexDataTeam/silexdata.collection_skeleton/.github/workflows/reusable-release.yml@v1
+    with:
+      resume-tag: ${{ inputs.tag }}
+    secrets: inherit

@@ -1,3 +1,6 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
 ### REQUIRED
 # The namespace of the collection. This can be a company/brand/organization or product namespace under which all
 # content lives. May only contain alphanumeric lowercase characters and underscores. Namespaces cannot start with
@@ -8,7 +11,11 @@ namespace: silexdata
 name: meraki
 
 # The version of the collection. Must be compatible with semantic versioning
-version: 1.2.0
+#
+# Managed by the release workflow - do not edit it by hand. A merged PR's
+# changelog fragments decide the next version, bumped relative to this value;
+# fragments that are only `trivial` release nothing. See .claude/rules/ci.md.
+version: "1.2.0"
 
 # The path to the Markdown (.md) readme file. This path is relative to the root of the collection
 readme: README.md
@@ -16,26 +23,29 @@ readme: README.md
 # A list of the collection's content authors. Can be just the name or in the format 'Full Name <email> (url)
 # @nicks:irc/im.site#channel'
 authors:
-  - Matthew Hyclak <mhyclak@silexdata.com>
-  - Adam Brauns <abrauns@silexdata.com>
+  - 'Matthew Hyclak <mhyclak@silexdata.com>'
+  - 'Adam Brauns <abrauns@silexdata.com>'
 
 ### OPTIONAL but strongly recommended
 # A short summary description of the collection
-description: Enhancement to Cisco Meraki collections including a dynamic inventory plugin
+description: 'Enhancement to Cisco Meraki collections including a dynamic inventory plugin'
 
 # Either a single license or a list of licenses for content inside of a collection. Ansible Galaxy currently only
-# accepts L(SPDX,https://spdx.org/licenses/) licenses. This key is mutually exclusive with 'license_file'
+# accepts L(SPDX,https://spdx.org/licenses/) licenses. This key is mutually exclusive with 'license_file' -
+# galaxy-importer rejects a galaxy.yml that sets both, so 'license_file' is deliberately absent here.
+#
+# List every license a file in this collection actually uses - it must match LICENSES/. A new collection is
+# Apache-2.0 throughout (see COPYING). Add GPL-3.0-or-later here, with LICENSES/GPL-3.0-or-later.txt, when the
+# first plugin arrives (plugin code outside module_utils/ is GPL-3.0-or-later), and BSD-2-Clause, with its
+# text, when the first module_utils file arrives. See .claude/rules/licensing.md.
 license:
   - Apache-2.0
-
-# The path to the license file for the collection. This path is relative to the root of the collection. This key is
-# mutually exclusive with 'license'
-license_file: ''
 
 # A list of tags you want to associate with the collection for indexing/searching. A tag name has the same character
 # requirements as 'namespace' and 'name'
 tags:
   - collection
+  - silexdata
   - sdn
   - meraki
   - cisco
@@ -50,7 +60,7 @@ tags:
 dependencies: {}
 
 # The URL of the originating SCM repository
-repository: https://github.com/SilexDataTeam/ansible-meraki
+repository: https://github.com/SilexDataTeam/silexdata.meraki
 
 # The URL to any online docs
 documentation: https://galaxy.ansible.com/ui/repo/published/silexdata/meraki/docs/
@@ -59,10 +69,22 @@ documentation: https://galaxy.ansible.com/ui/repo/published/silexdata/meraki/doc
 homepage: https://www.silexdata.com/
 
 # The URL to the collection issue tracker
-issues: https://github.com/SilexDataTeam/ansible-meraki/issues
+issues: https://github.com/SilexDataTeam/silexdata.meraki/issues
 
 # A list of file glob-like patterns used to filter any files or directories that should not be included in the build
 # artifact. A pattern is matched from the relative path of the file or directory of the collection directory. This
 # uses 'fnmatch' to match the files or directories. Some directories and files like 'galaxy.yml', '*.pyc', '*.retry',
 # and '.git' are always filtered
-build_ignore: []
+build_ignore:
+  - .github
+  - .claude
+  - .gitignore
+  - .pre-commit-config.yaml
+  - .yamllint
+  - .pymarkdown.json
+  - .markdownlint.json
+  - .ansible-lint
+  - pyproject.toml
+  - noxfile.py
+  - antsibull-nox.toml
+  - tests/output

@@ -1,2 +1,29 @@
 ---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
 requires_ansible: '>=2.14.0'
+
+# Content that Ansible needs to load from another location or that has
+# been deprecated/removed. Uncomment and adapt as needed, e.g. when
+# renaming a module:
+# plugin_routing:
+#   modules:
+#     old_module_name:
+#       redirect: <namespace>.<collection_name>.new_module_name
+#       deprecation:
+#         removal_version: 2.0.0
+#         warning_text: >-
+#           The old_module_name module has been renamed to new_module_name.
+#           Update tasks to use the new name; the old name is a deprecated
+#           redirect and will be removed in 2.0.0.
+
+# Python import statements that Ansible needs to load from another location.
+# import_redirection:
+#   ansible_collections.ns.col.plugins.module_utils.old_location:
+#     redirect: ansible_collections.ns.col.plugins.module_utils.new_location
+
+# Groups of actions/modules that take a common set of options.
+# action_groups:
+#   group_name:
+#     - module1
+#     - module2

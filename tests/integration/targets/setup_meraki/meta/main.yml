@@ -1,0 +1,6 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Setup role for this collection's integration tests. It has no dependencies
+# of its own and is depended upon by every <module_name> integration target.
+dependencies: []

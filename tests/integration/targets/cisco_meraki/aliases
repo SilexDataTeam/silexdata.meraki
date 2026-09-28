@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Exercises the cisco_meraki inventory plugin through ansible-inventory and
+# ansible-playbook. The service-independent tests always run; the live ones
+# are gated on setup_meraki_service_available, so the target also runs, as a
+# dry run, with no credentials.

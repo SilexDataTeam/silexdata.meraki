@@ -1,0 +1,24 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Variables owned by the setup_meraki role (role-name prefixed).
+#
+# Dry-run placeholders for the Meraki Dashboard API. The plugin takes the API
+# base URL as meraki_base_url and the key as meraki_api_key (or the
+# MERAKI_DASHBOARD_API_KEY environment variable).
+#
+# Using the reserved .invalid TLD (RFC 6761) means the availability probe
+# below reliably reports the service as down during a dry-run, rather than
+# accidentally resolving to something reachable. For a live run, set
+# setup_meraki_base_url to https://api.meraki.com/api/v1 (or a regional
+# Dashboard API URL) and setup_meraki_api_key to a real key.
+setup_meraki_base_url: "https://dry-run.meraki.invalid/api/v1"
+setup_meraki_api_key: "dry-run-api-key"
+
+# Service-availability handling. By default an unreachable service produces a
+# warning and the live tests are skipped. Set this to true (e.g. from the
+# pipeline) to fail the run instead when the service is down.
+setup_meraki_require_service: false
+
+# Seconds to wait when probing the service endpoint for availability.
+setup_meraki_service_probe_timeout: 5

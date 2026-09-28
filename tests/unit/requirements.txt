@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Dependencies for unit tests. Installed by `ansible-test units --requirements`.
+meraki
+pytest
+pytest-mock

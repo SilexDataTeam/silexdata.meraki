@@ -1,0 +1,179 @@
+---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Live (service-dependent) tests: validate the inventory the plugin builds from
+# what the real Dashboard API returns. These require a reachable service, so the
+# whole block is skipped when the setup_meraki role reports the service as
+# unavailable. In that case setup_meraki has already emitted a warning (or
+# failed the run, if setup_meraki_require_service is enabled).
+#
+# Every source is loaded with MERAKI_DASHBOARD_API_KEY removed from the
+# environment unless the test is about that variable, so each option is tested
+# on its own.
+
+- name: Expected-return-values | Live inventory checks
+  when: cisco_meraki_service_available | bool
+  block:
+    - name: Expected-return-values | Write a source that sets the key and URL itself
+      ansible.builtin.copy:
+        dest: "{{ cisco_meraki_workdir.path }}/live.meraki.yml"
+        content: |
+          ---
+          plugin: silexdata.meraki.cisco_meraki
+          meraki_api_key: {{ cisco_meraki_api_key }}
+          meraki_base_url: {{ cisco_meraki_base_url }}
+        mode: "0600"
+      no_log: true
+
+    - name: Expected-return-values | List the inventory from that source
+      ansible.builtin.command:
+        argv:
+          - env
+          - -u
+          - MERAKI_DASHBOARD_API_KEY
+          - ansible-inventory
+          - -i
+          - "{{ cisco_meraki_workdir.path }}/live.meraki.yml"
+          - --list
+      environment: "{{ cisco_meraki_inventory_env }}"
+      register: cisco_meraki_live
+      changed_when: false
+      failed_when: false
+
+    - name: Expected-return-values | Assert the source's own meraki_api_key authenticated
+      ansible.builtin.assert:
+        that:
+          - cisco_meraki_live.rc == 0
+        fail_msg: >-
+          meraki_api_key set in the inventory source must be used to
+          authenticate. rc={{ cisco_meraki_live.rc }} stderr={{ cisco_meraki_live.stderr }}
+        success_msg: The source's API key authenticated.
+
+    - name: Expected-return-values | Assert every network became a host of its organization's group
+      vars:
+        cisco_meraki_inv: "{{ cisco_meraki_live.stdout | from_json }}"
+        cisco_meraki_hostvars: "{{ cisco_meraki_inv._meta.hostvars }}"
+        cisco_meraki_org_groups: "{{ cisco_meraki_inv.keys() | select('match', 'net_meraki_organization_') | list }}"
+        cisco_meraki_grouped: "{{ cisco_meraki_org_groups | map('extract', cisco_meraki_inv) | map(attribute='hosts') | flatten }}"
+      ansible.builtin.assert:
+        that:
+          - cisco_meraki_hostvars | length > 0
+          - cisco_meraki_org_groups | length > 0
+          - cisco_meraki_hostvars.keys() | difference(cisco_meraki_grouped) | length == 0
+          - cisco_meraki_hostvars.values() | selectattr('org_id', 'undefined') | list | length == 0
+          - cisco_meraki_hostvars.values() | selectattr('is_bound_to_config_template', 'undefined') | list | length == 0
+          - cisco_meraki_hostvars.values() | selectattr('devices', 'defined') | list | length == 0
+        fail_msg: >-
+          Expected every network as a host, each in a net_meraki_organization_* group
+          (want_organization defaults to true), with org_id and
+          is_bound_to_config_template set, and no devices (want_devices defaults to
+          false). Got groups {{ cisco_meraki_inv.keys() | list }}.
+        success_msg: >-
+          {{ cisco_meraki_hostvars | length }} networks, grouped by
+          {{ cisco_meraki_org_groups | length }} organizations.
+
+    - name: Expected-return-values | Write a source that takes its key from the environment
+      ansible.builtin.copy:
+        dest: "{{ cisco_meraki_workdir.path }}/env-key.meraki.yml"
+        content: |
+          ---
+          plugin: silexdata.meraki.cisco_meraki
+          meraki_base_url: {{ cisco_meraki_base_url }}
+        mode: "0600"
+
+    - name: Expected-return-values | List the inventory with MERAKI_DASHBOARD_API_KEY
+      ansible.builtin.command:
+        argv:
+          - ansible-inventory
+          - -i
+          - "{{ cisco_meraki_workdir.path }}/env-key.meraki.yml"
+          - --list
+      environment: "{{ cisco_meraki_inventory_env | combine({'MERAKI_DASHBOARD_API_KEY': cisco_meraki_api_key}) }}"
+      register: cisco_meraki_env_key
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Expected-return-values | Assert MERAKI_DASHBOARD_API_KEY authenticated
+      ansible.builtin.assert:
+        that:
+          - cisco_meraki_env_key.rc == 0
+          - (cisco_meraki_env_key.stdout | from_json)._meta.hostvars | length > 0
+        fail_msg: "MERAKI_DASHBOARD_API_KEY must be accepted in place of meraki_api_key. rc={{ cisco_meraki_env_key.rc }}"
+        success_msg: The environment's API key authenticated.
+
+    - name: Expected-return-values | Write a source with custom grouping and devices
+      ansible.builtin.copy:
+        dest: "{{ cisco_meraki_workdir.path }}/grouping.meraki.yml"
+        content: |
+          ---
+          plugin: silexdata.meraki.cisco_meraki
+          meraki_base_url: {{ cisco_meraki_base_url }}
+          group_prefix: itest_
+          group_parent: itest_meraki
+          want_devices: true
+        mode: "0600"
+
+    - name: Expected-return-values | List the inventory with custom grouping and devices
+      ansible.builtin.command:
+        argv:
+          - ansible-inventory
+          - -i
+          - "{{ cisco_meraki_workdir.path }}/grouping.meraki.yml"
+          - --list
+      environment: "{{ cisco_meraki_inventory_env | combine({'MERAKI_DASHBOARD_API_KEY': cisco_meraki_api_key}) }}"
+      register: cisco_meraki_grouping
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Expected-return-values | Assert group_prefix, group_parent and want_devices took effect
+      vars:
+        cisco_meraki_inv: "{{ cisco_meraki_grouping.stdout | from_json }}"
+        cisco_meraki_children: "{{ cisco_meraki_inv.itest_meraki.children | default([]) }}"
+      ansible.builtin.assert:
+        that:
+          - cisco_meraki_grouping.rc == 0
+          - cisco_meraki_children | length > 0
+          - cisco_meraki_children | reject('match', 'itest_organization_') | list | length == 0
+          - cisco_meraki_inv.keys() | select('match', 'net_meraki_') | list | length == 0
+          - cisco_meraki_inv._meta.hostvars.values() | rejectattr('devices', 'defined') | list | length == 0
+        fail_msg: >-
+          Expected organization groups named itest_organization_* under itest_meraki,
+          none with the default prefix, and a devices variable on every host.
+          rc={{ cisco_meraki_grouping.rc }}
+        success_msg: Grouping options and want_devices took effect.
+
+    - name: Expected-return-values | Write a source with want_organization disabled
+      ansible.builtin.copy:
+        dest: "{{ cisco_meraki_workdir.path }}/no-orgs.meraki.yml"
+        content: |
+          ---
+          plugin: silexdata.meraki.cisco_meraki
+          meraki_base_url: {{ cisco_meraki_base_url }}
+          want_organization: false
+        mode: "0600"
+
+    - name: Expected-return-values | List the inventory without organization groups
+      ansible.builtin.command:
+        argv:
+          - ansible-inventory
+          - -i
+          - "{{ cisco_meraki_workdir.path }}/no-orgs.meraki.yml"
+          - --list
+      environment: "{{ cisco_meraki_inventory_env | combine({'MERAKI_DASHBOARD_API_KEY': cisco_meraki_api_key}) }}"
+      register: cisco_meraki_no_orgs
+      changed_when: false
+      failed_when: false
+      no_log: true
+
+    - name: Expected-return-values | Assert no organization groups were created
+      vars:
+        cisco_meraki_inv: "{{ cisco_meraki_no_orgs.stdout | from_json }}"
+      ansible.builtin.assert:
+        that:
+          - cisco_meraki_no_orgs.rc == 0
+          - cisco_meraki_inv._meta.hostvars | length > 0
+          - cisco_meraki_inv.keys() | select('match', 'net_meraki_organization_') | list | length == 0
+        fail_msg: "want_organization: false must still list every network, without organization groups. rc={{ cisco_meraki_no_orgs.rc }}"
+        success_msg: want_organization false listed the networks without organization groups.

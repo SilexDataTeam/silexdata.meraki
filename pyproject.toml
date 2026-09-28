@@ -1,0 +1,45 @@
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
+# Project tooling configuration for this collection.
+# This file configures developer tooling only; it is not part of the published
+# collection artifact (see build_ignore in galaxy.yml).
+
+# ---------------------------------------------------------------------------
+# tox-ansible
+# ---------------------------------------------------------------------------
+# tox-ansible auto-generates sanity, unit, and integration environments for
+# each ansible-core version installed in .tox/.  List and run them with:
+#   tox list --ansible
+#   tox -e sanity-py3.12-2.21 --ansible
+#   tox -f unit --ansible -p auto
+#   tox --ansible -p auto   # run everything in parallel
+[tool.tox]
+min_version = "4.2"
+
+[tool.tox-ansible]
+# Uncomment to skip specific ansible-core or Python versions, e.g.:
+# skip = ["2.14", "devel"]
+
+[tool.ruff]
+line-length = 160
+target-version = "py39"
+extend-exclude = [
+    "changelogs",
+    "tests/output",
+]
+
+[tool.ruff.lint]
+# E/W: pycodestyle, F: pyflakes, I: isort, UP: pyupgrade, B: flake8-bugbear
+select = ["E", "W", "F", "I", "UP", "B"]
+ignore = ["UP001", "UP010", "UP026", "UP036"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ansible modules and the other documentable plugin types declare
+# DOCUMENTATION/EXAMPLES/RETURN before their imports, which conflicts with E402
+# (module-level import not at top of file). module_utils and doc_fragments
+# carry no such blocks, so E402 stays enforced there.
+"plugins/modules/*.py" = ["E402", "UP026"]
+"plugins/{action,become,cache,callback,cliconf,connection,filter,httpapi,inventory,lookup,netconf,shell,strategy,test,vars}/*.py" = ["E402"]
+
+[tool.ruff.format]
+quote-style = "preserve"

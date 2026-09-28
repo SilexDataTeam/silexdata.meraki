@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
 # Created by https://www.toptal.com/developers/gitignore/api/vim,git,macos,linux,pydev,emacs,dotenv,python,windows,webstorm,pycharm+all,jupyternotebooks
 # Edit at https://www.toptal.com/developers/gitignore?templates=vim,git,macos,linux,pydev,emacs,dotenv,python,windows,webstorm,pycharm+all,jupyternotebooks
 
@@ -519,3 +521,10 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/vim,git,macos,linux,pydev,emacs,dotenv,python,windows,webstorm,pycharm+all,jupyternotebooks
+
+# ansible-lint scratch directory
+.ansible/
+
+# Personal, per-developer Claude Code settings (the shared rules in
+# .claude/CLAUDE.md and .claude/rules/ ARE tracked).
+.claude/settings.local.json

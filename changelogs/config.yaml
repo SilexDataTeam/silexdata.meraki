@@ -1,4 +1,6 @@
 ---
+# SPDX-FileCopyrightText: Silex Data Solutions
+# SPDX-License-Identifier: Apache-2.0
 add_plugin_period: true
 changelog_nice_yaml: true
 changelog_sort: alphanumerical
@@ -32,7 +34,7 @@ sections:
     - Bugfixes
   - - known_issues
     - Known Issues
-title: Silexdata Meraki
+title: "Silexdata Meraki"
 trivial_section_name: trivial
 use_fqcn: true
 vcs: auto
