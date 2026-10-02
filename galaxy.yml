@@ -15,7 +15,7 @@ name: meraki
 # Managed by the release workflow - do not edit it by hand. A merged PR's
 # changelog fragments decide the next version, bumped relative to this value;
 # fragments that are only `trivial` release nothing. See .claude/rules/ci.md.
-version: "1.2.0"
+version: 1.3.0
 
 # The path to the Markdown (.md) readme file. This path is relative to the root of the collection
 readme: README.md

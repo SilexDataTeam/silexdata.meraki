@@ -8,3 +8,32 @@ releases:
     fragments:
       - configtemplate.yml
     release_date: '2025-03-19'
+  1.3.0:
+    changes:
+      bugfixes:
+        - cisco_meraki - authenticate with the ``meraki_api_key`` set in the inventory
+          source. Only the ``MERAKI_DASHBOARD_API_KEY`` environment variable was used
+          before.
+        - cisco_meraki - honor ``strict`` for ``compose``. An expression using an
+          undefined variable failed the inventory even with ``strict`` set to false.
+        - cisco_meraki - include every organization and network. Only the first page
+          the Dashboard API returned was used before, which is at most 1000 networks
+          per organization.
+        - cisco_meraki - name the Dashboard API URL in the error when the API cannot
+          be read.
+        - cisco_meraki - query the ``meraki_base_url`` set in the inventory source.
+          The default Dashboard API URL was always used before.
+        - cisco_meraki - report that the ``meraki`` Python library is required when
+          it is not installed, instead of failing to load the plugin.
+        - cisco_meraki - use the inventory cache when ``cache`` is enabled. It was
+          never read or written before.
+      minor_changes:
+        - cisco_meraki - the inventory plugin is now licensed GPL-3.0-or-later, as
+          Ansible requires of plugins that run in the controller. The rest of the
+          collection stays Apache-2.0.
+    fragments:
+      - adopt-shared-ci.yml
+      - cisco_meraki-license.yml
+      - cisco_meraki-options.yml
+      - cisco_meraki-sanity.yml
+    release_date: '2026-10-02'
