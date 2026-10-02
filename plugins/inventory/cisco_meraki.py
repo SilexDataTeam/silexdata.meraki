@@ -1,10 +1,11 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+# Copyright (c) 2024-2026, Silex Data Solutions <info@silexdata.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-FileCopyrightText: 2024-2026 Silex Data Solutions <info@silexdata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 
-# Copyright (c) 2024 Silex Data Systems
-# Apache 2.0
+from __future__ import absolute_import, division, print_function
 
-from __future__ import annotations
+__metaclass__ = type
 
 DOCUMENTATION = '''
 ---
@@ -57,12 +58,17 @@ options:
     default: true
 '''
 
-import meraki
+from ansible.errors import AnsibleError
+from ansible.module_utils.basic import missing_required_lib
+from ansible.plugins.inventory import BaseInventoryPlugin, Cacheable, Constructable, to_safe_group_name
 
-from ansible.errors import AnsibleError, AnsibleParserError
-from ansible.module_utils._text import to_bytes, to_native, to_text
-from ansible.module_utils.common._collections_compat import MutableMapping
-from ansible.plugins.inventory import BaseInventoryPlugin, Cacheable, to_safe_group_name, Constructable
+try:
+    import meraki
+except ImportError:
+    HAS_MERAKI = False
+else:
+    HAS_MERAKI = True
+
 
 class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
     '''Host inventory parser for ansible using Cisco Meraki API as source'''
@@ -70,15 +76,14 @@ class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
     NAME = 'silexdata.meraki.cisco_meraki'
 
     def __init__(self):
-        super(InventoryModule, self).__init__()
+        super().__init__()
 
-        self.dashboard = None
         self.group_parent = None
         self.group_prefix = None
 
     def verify_file(self, path):
         valid = False
-        if super(InventoryModule, self).verify_file(path):
+        if super().verify_file(path):
             if path.endswith(('meraki.yaml', 'meraki.yml')):
                 valid = True
             else:
@@ -94,37 +99,56 @@ class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
         strict = self.get_option('strict')
 
         # Add variables created by the user's Jinja2 expressions to the host
-        self._set_composite_vars(self.get_option('compose'), host_vars, hostname, strict=True)
+        self._set_composite_vars(self.get_option('compose'), host_vars, hostname, strict=strict)
 
         # Create user-defined groups using variables and Jinja2 conditionals
         self._add_host_to_composed_groups(self.get_option('groups'), host_vars, hostname, strict=strict)
         self._add_host_to_keyed_groups(self.get_option('keyed_groups'), host_vars, hostname, strict=strict)
 
-    def _populate(self):
-        self.groups = dict()
-        self.hosts = dict()
+    def _fetch_organizations(self):
+        '''Read every organization, its networks and, if wanted, their devices from the Meraki API'''
+        if not HAS_MERAKI:
+            raise AnsibleError(missing_required_lib('meraki'))
+
+        base_url = self.get_option('meraki_base_url')
+        want_devices = self.get_option('want_devices')
+        try:
+            dashboard = meraki.DashboardAPI(
+                api_key=self.get_option('meraki_api_key'),
+                base_url=base_url,
+                suppress_logging=True,
+            )
+            organizations = []
+            # The SDK returns one page unless asked for all of them.
+            for org in dashboard.organizations.getOrganizations(total_pages='all'):
+                networks = dashboard.organizations.getOrganizationNetworks(org['id'], total_pages='all')
+                if want_devices:
+                    for network in networks:
+                        network['devices'] = dashboard.networks.getNetworkDevices(network['id'])
+                organizations.append({'id': org['id'], 'name': org['name'], 'networks': networks})
+        except Exception as e:
+            raise AnsibleError(f'Unable to read the inventory from the Meraki API at {base_url}: {e}') from e
+        return organizations
+
+    def _populate(self, organizations):
         self.group_parent = self.get_option('group_parent')
         self.group_prefix = self.get_option('group_prefix')
-        self.want_devices = self.get_option('want_devices')
-        self.want_organization = self.get_option('want_organization')
+        want_devices = self.get_option('want_devices')
+        want_organization = self.get_option('want_organization')
 
         # Create parent group (if defined)
         if self.group_parent:
             self.inventory.add_group(self.group_parent)
 
-        orgs = self.dashboard.organizations.getOrganizations()
-
-        for org in orgs:
-            networks = self.dashboard.organizations.getOrganizationNetworks(org['id'])
-
+        for org in organizations:
             # Create a group for the organization if desired
-            if self.want_organization:
-                org_group_name = to_safe_group_name("{0}organization_{1}".format(self.group_prefix, org['name'].lower().replace(' ', '')))
+            if want_organization:
+                org_group_name = to_safe_group_name(f"{self.group_prefix}organization_{org['name'].lower().replace(' ', '')}")
                 self.inventory.add_group(org_group_name)
                 if self.group_parent:
                     self.inventory.add_child(self.group_parent, org_group_name)
 
-            for network in networks:
+            for network in org['networks']:
                 host_vars = {
                     'ansible_connection': 'local',
                     'id': network['id'],
@@ -136,25 +160,42 @@ class InventoryModule(BaseInventoryPlugin, Cacheable, Constructable):
                     'url': network['url'],
                     'is_bound_to_config_template': network['isBoundToConfigTemplate'],
                     'org_id': org['id'],
-                    'org_name': org['name']
+                    'org_name': org['name'],
                 }
 
-                if self.want_devices:
-                  devices = self.dashboard.networks.getNetworkDevices(network['id'])
-                  host_vars.update({'devices': devices})
+                if want_devices:
+                    host_vars['devices'] = network.get('devices', [])
 
                 self.add_host(network['name'], host_vars)
 
-                if self.want_organization:
+                if want_organization:
                     self.inventory.add_child(org_group_name, network['name'])
 
     def parse(self, inventory, loader, path, cache=True):
-        super(InventoryModule, self).parse(inventory, loader, path)
+        super().parse(inventory, loader, path)
 
         # Read config from file
         self._read_config_data(path)
 
-        self.dashboard = meraki.DashboardAPI(suppress_logging=True)
+        # Serve the API data from the inventory cache when it is enabled and
+        # holds this source; otherwise read it, and cache it if enabled.
+        cache_key = self.get_cache_key(path)
+        user_cache_setting = self.get_option('cache')
+        attempt_to_read_cache = user_cache_setting and cache
+        cache_needs_update = user_cache_setting and not cache
+
+        organizations = None
+        if attempt_to_read_cache:
+            try:
+                organizations = self._cache[cache_key]
+            except KeyError:
+                cache_needs_update = True
+
+        if organizations is None:
+            organizations = self._fetch_organizations()
+
+        if cache_needs_update:
+            self._cache[cache_key] = organizations
 
         # Populate the inventory
-        self._populate()
+        self._populate(organizations)

@@ -1,0 +1,4 @@
+---
+minor_changes:
+  - cisco_meraki - the inventory plugin is now licensed GPL-3.0-or-later, as Ansible requires of plugins that run in the controller. The rest of the
+    collection stays Apache-2.0.

@@ -1,5 +1,7 @@
-# SPDX-FileCopyrightText: Silex Data Solutions
-# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2026, Silex Data Solutions <info@silexdata.com>
+# GNU General Public License v3.0+ (see LICENSES/GPL-3.0-or-later.txt or https://www.gnu.org/licenses/gpl-3.0.txt)
+# SPDX-FileCopyrightText: 2026 Silex Data Solutions <info@silexdata.com>
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Unit tests for the silexdata.meraki.cisco_meraki inventory plugin.
 
 The plugin is driven only through parse(), the way ansible-inventory drives it,
@@ -30,6 +32,8 @@ DEFAULT_BASE_URL = "https://api.meraki.com/api/v1"
 API_KEY_ENV = "MERAKI_DASHBOARD_API_KEY"
 # The Dashboard API's default page size for GET /organizations/{id}/networks.
 NETWORKS_PER_PAGE = 1000
+# ... and for GET /organizations.
+ORGANIZATIONS_PER_PAGE = 9000
 
 
 def network(org_id, index, **overrides):
@@ -84,9 +88,13 @@ class _Organizations:
     def __init__(self, dashboard):
         self._dashboard = dashboard
 
-    def getOrganizations(self, total_pages="all", **kwargs):
+    def getOrganizations(self, total_pages=1, direction="next", **kwargs):
+        # Like getOrganizationNetworks, one page unless asked for more.
         self._dashboard.calls.append(("getOrganizations",))
-        return list(self._dashboard.organizations)
+        organizations = self._dashboard.organizations
+        if total_pages in (-1, "all"):
+            return list(organizations)
+        return list(organizations[: int(total_pages) * int(kwargs.get("perPage", ORGANIZATIONS_PER_PAGE))])
 
     def getOrganizationNetworks(self, organizationId, total_pages=1, direction="next", **kwargs):
         # The SDK's default is total_pages=1: one page of perPage networks
@@ -126,6 +134,12 @@ def load(tmp_path):
         inventory = InventoryData()
         plugin = inventory_loader.get(PLUGIN)
         plugin.parse(inventory, DataLoader(), str(source), cache=cache)
+        # What InventoryManager does after every parse(): persist the cache,
+        # tolerating a plugin that has no cache loaded.
+        try:
+            plugin.update_cache_if_changed()
+        except AttributeError:
+            pass
         return inventory
 
     return _load

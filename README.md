@@ -112,13 +112,20 @@ See the [changelog](https://github.com/SilexDataTeam/silexdata.meraki/blob/main/
 
 ## Licensing
 
-This collection is licensed under the **Apache License, Version 2.0** - see
-[COPYING](COPYING). The full license texts are under [LICENSES/](LICENSES).
+This collection is licensed under the **Apache License, Version 2.0** by
+default - see [COPYING](COPYING) - with one exception, declared in the file's
+own SPDX header. The full license texts are under [LICENSES/](LICENSES).
 
-You are free to use, modify, and distribute this collection under the terms of the Apache 2.0 license. Contributions to this project will also be licensed under Apache 2.0 unless otherwise noted.
+| Path | License |
+| --- | --- |
+| plugin code in `plugins/` (the `cisco_meraki` inventory plugin) | `GPL-3.0-or-later` |
+| everything else | `Apache-2.0` |
 
-Before changing any license header, read `.claude/rules/licensing.md` - in
-particular, code adapted from another project keeps its original license and
-attribution.
+Plugin code is GPL-3.0-or-later because Ansible requires it for plugins that
+run inside the controller.
+
+Contributions are accepted under these same terms. Before changing any license
+header, read `.claude/rules/licensing.md` - in particular, code adapted from
+another project keeps its original license and attribution.
 
 Run `nox -e license-check` to verify compliance.
